@@ -1,0 +1,97 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+.scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 800px;
+  background: url('./assets/bg.jpg') no-repeat center center;
+  background-size: cover;
+  overflow: hidden;
+}
+
+/* Bouncing wrapper */
+@keyframes floatBounce {
+  0% { transform: translate(-50%, -50%) translateY(0px); }
+  50% { transform: translate(-50%, -50%) translateY(-12px); }
+  100% { transform: translate(-50%, -50%) translateY(0px); }
+}
+
+.floating-object-wrapper {
+  position: absolute;
+  top: 56%;
+  left: 48%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+
+.floating-object {
+  width: 300px;
+  height: 300px;
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease-out;
+  position: relative;
+  pointer-events: auto
+}
+
+/* Floating shadow below object */
+.floating-object::after {
+  content: "";
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  width: 80%;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  filter: blur(8px);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  z-index: -1;
+}
+
+.floating-object img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Centered Logo */
+.logo {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  z-index: 3;
+  
+}
+
+/* CTA centered at bottom */
+.cta {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 32px;
+  font-size: 16px;
+  background: #ff5a00;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+  z-index: 3;
+  cursor: pointer;
+}
