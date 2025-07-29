@@ -1,106 +1,52 @@
-// ✅ Final version with real-world floating + tilt + drag
+// ✅ Final script.js with orientation + drag (mouse & touch) + bounce
 
 const object = document.getElementById("floatingObject");
 
 let currentX = 0;
 let currentY = 0;
+let tiltX = 0;
+let tiltY = 0;
 let bounceY = 0;
 let bounceDirection = 1;
 
 let startX = 0;
 let startY = 0;
 let isDragging = false;
+let isMotionActive = false;
 
-let tiltX = 0;
-let tiltY = 0;
-let targetTiltX = 0;
-let targetTiltY = 0;
+const maxOffset = 60;
 
-const maxOffset = 80;
-
+// Clamp helper
 function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-// 🧠 Animate: bounce + drag + interpolated tilt
+// 🎯 Animation: bounce + drag + tilt
 function animate() {
-  if (!isDragging) {
+  if (!isDragging && !isMotionActive) {
     bounceY += 0.3 * bounceDirection;
     if (bounceY > 10 || bounceY < -10) bounceDirection *= -1;
   }
 
-  // 🌀 Smooth tilt with lerp
-  tiltX += (targetTiltX - tiltX) * 0.2;
-  tiltY += (targetTiltY - tiltY) * 0.2;
-
   const finalX = currentX + tiltX;
-  const finalY = currentY + tiltY;
-
-  object.style.transform = `translateX(${finalX}px) translateY(${finalY + bounceY}px)`;
-
+  const finalY = currentY + tiltY + bounceY;
+  object.style.transform = `translateX(${finalX}px) translateY(${finalY}px)`;
   requestAnimationFrame(animate);
 }
 animate();
 
-// 🖐 Touch Events
-object.addEventListener("touchstart", (e) => {
-  isDragging = true;
-  startX = e.touches[0].clientX - currentX;
-  startY = e.touches[0].clientY - currentY;
-});
-
-object.addEventListener("touchmove", (e) => {
-  const moveX = e.touches[0].clientX - startX;
-  const moveY = e.touches[0].clientY - startY;
-
-  currentX = clamp(moveX, -maxOffset, maxOffset);
-  currentY = clamp(moveY, -maxOffset, maxOffset);
-});
-
-object.addEventListener("touchend", () => {
-  isDragging = false;
-});
-
-// 🖱 Mouse Events
-object.addEventListener("mousedown", (e) => {
-  isDragging = true;
-  startX = e.clientX - currentX;
-  startY = e.clientY - currentY;
-
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
-});
-
-function onMouseMove(e) {
-  const moveX = e.clientX - startX;
-  const moveY = e.clientY - startY;
-
-  currentX = clamp(moveX, -maxOffset, maxOffset);
-  currentY = clamp(moveY, -maxOffset, maxOffset);
-}
-
-function onMouseUp() {
-  isDragging = false;
-  document.removeEventListener("mousemove", onMouseMove);
-  document.removeEventListener("mouseup", onMouseUp);
-}
-
-// 📱 Orientation Event Handler
+// 📱 Orientation Handler
 function handleOrientation(event) {
+  if (!isMotionActive || isDragging) return;
+
   const gamma = event.gamma || 0;
   const beta = event.beta || 0;
 
-  targetTiltX = clamp(gamma * 2.2, -maxOffset, maxOffset);
-  targetTiltY = clamp(beta * 1.2, -maxOffset, maxOffset);
-
-  // Debug output
-  const debug = document.getElementById("debug") || document.createElement("div");
-  debug.id = "debug";
-  debug.innerHTML = `gamma: ${gamma.toFixed(1)}<br>beta: ${beta.toFixed(1)}`;
-  document.body.appendChild(debug);
+  tiltX = clamp(gamma * 1.5, -maxOffset, maxOffset);
+  tiltY = clamp(beta * 0.8, -maxOffset, maxOffset);
 }
 
-// 📱 Request motion permission (iOS)
+// 🛡️ Request permission (iOS)
 function requestMotionPermission() {
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
@@ -111,16 +57,63 @@ function requestMotionPermission() {
         if (response === "granted") {
           window.addEventListener("deviceorientation", handleOrientation);
         } else {
-          alert("Device orientation permission denied ❌");
+          alert("Motion permission denied ❌");
         }
       })
-      .catch((err) => {
-        console.error("Motion permission error:", err);
-      });
+      .catch(console.error);
   } else {
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
 
-// 🔓 Trigger permission on first tap
+// 🧠 Touch drag
+object.addEventListener("touchstart", (e) => {
+  isDragging = true;
+  isMotionActive = false;
+  startX = e.touches[0].clientX - currentX;
+  startY = e.touches[0].clientY - currentY;
+});
+
+object.addEventListener("touchmove", (e) => {
+  const moveX = e.touches[0].clientX - startX;
+  const moveY = e.touches[0].clientY - startY;
+  currentX = clamp(moveX, -maxOffset, maxOffset);
+  currentY = clamp(moveY, -maxOffset, maxOffset);
+});
+
+object.addEventListener("touchend", () => {
+  isDragging = false;
+});
+
+// 🧠 Mouse drag
+object.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  isMotionActive = false;
+  startX = e.clientX - currentX;
+  startY = e.clientY - currentY;
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+});
+
+function onMouseMove(e) {
+  const moveX = e.clientX - startX;
+  const moveY = e.clientY - startY;
+  currentX = clamp(moveX, -maxOffset, maxOffset);
+  currentY = clamp(moveY, -maxOffset, maxOffset);
+}
+
+function onMouseUp() {
+  isDragging = false;
+  document.removeEventListener("mousemove", onMouseMove);
+  document.removeEventListener("mouseup", onMouseUp);
+}
+
+// 👆 Tap to activate motion
+object.addEventListener("click", () => {
+  if (!isDragging) {
+    isMotionActive = true;
+  }
+});
+
+// ✅ iOS permission on tap
 window.addEventListener("click", requestMotionPermission);
