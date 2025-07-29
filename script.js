@@ -1,4 +1,4 @@
-// ✅ Fixed script.js with working orientation + drag
+// ✅ Final version with real-world floating + tilt + drag
 
 const object = document.getElementById("floatingObject");
 
@@ -13,6 +13,8 @@ let isDragging = false;
 
 let tiltX = 0;
 let tiltY = 0;
+let targetTiltX = 0;
+let targetTiltY = 0;
 
 const maxOffset = 80;
 
@@ -20,12 +22,16 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-// 🧠 Animate bounce + drag + tilt
+// 🧠 Animate: bounce + drag + interpolated tilt
 function animate() {
   if (!isDragging) {
     bounceY += 0.3 * bounceDirection;
     if (bounceY > 10 || bounceY < -10) bounceDirection *= -1;
   }
+
+  // 🌀 Smooth tilt with lerp
+  tiltX += (targetTiltX - tiltX) * 0.2;
+  tiltY += (targetTiltY - tiltY) * 0.2;
 
   const finalX = currentX + tiltX;
   const finalY = currentY + tiltY;
@@ -79,45 +85,42 @@ function onMouseUp() {
   document.removeEventListener("mouseup", onMouseUp);
 }
 
-// 📱 Orientation Handler
+// 📱 Orientation Event Handler
 function handleOrientation(event) {
   const gamma = event.gamma || 0;
   const beta = event.beta || 0;
 
-  tiltX = clamp(gamma * 2.2, -maxOffset, maxOffset);
-  tiltY = clamp(beta * 1.2, -maxOffset, maxOffset);
+  targetTiltX = clamp(gamma * 2.2, -maxOffset, maxOffset);
+  targetTiltY = clamp(beta * 1.2, -maxOffset, maxOffset);
 
-  // Live debug output
+  // Debug output
   const debug = document.getElementById("debug") || document.createElement("div");
   debug.id = "debug";
   debug.innerHTML = `gamma: ${gamma.toFixed(1)}<br>beta: ${beta.toFixed(1)}`;
   document.body.appendChild(debug);
 }
 
-// 📱 Ask for permission (iOS only)
+// 📱 Request motion permission (iOS)
 function requestMotionPermission() {
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
     typeof DeviceOrientationEvent.requestPermission === "function"
   ) {
-    console.log("Requesting permission...");
     DeviceOrientationEvent.requestPermission()
       .then((response) => {
-        console.log("Permission response:", response);
         if (response === "granted") {
           window.addEventListener("deviceorientation", handleOrientation);
         } else {
-          alert("Permission denied ❌");
+          alert("Device orientation permission denied ❌");
         }
       })
       .catch((err) => {
         console.error("Motion permission error:", err);
       });
   } else {
-    console.log("Listening to deviceorientation directly ✅");
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
 
-// 📲 Trigger permission request on first tap
+// 🔓 Trigger permission on first tap
 window.addEventListener("click", requestMotionPermission);
