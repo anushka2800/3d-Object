@@ -1,4 +1,4 @@
-// ✅ Final script.js with orientation + drag (mouse & touch) + bounce
+// ✅ Final script.js with auto-orientation after permission, drag, and orientation baseline
 
 const object = document.getElementById("floatingObject");
 
@@ -14,7 +14,10 @@ let startY = 0;
 let isDragging = false;
 let isMotionActive = false;
 
-const maxOffset = 60;
+const maxOffset = 80;
+
+let initialGamma = null;
+let initialBeta = null;
 
 // Clamp helper
 function clamp(value, min, max) {
@@ -42,8 +45,15 @@ function handleOrientation(event) {
   const gamma = event.gamma || 0;
   const beta = event.beta || 0;
 
-  tiltX = clamp(gamma * 1.5, -maxOffset, maxOffset);
-  tiltY = clamp(beta * 0.8, -maxOffset, maxOffset);
+  // Set initial baseline once to prevent jump
+  if (initialGamma === null) initialGamma = gamma;
+  if (initialBeta === null) initialBeta = beta;
+
+  const relativeGamma = gamma - initialGamma;
+  const relativeBeta = beta - initialBeta;
+
+  tiltX = clamp(relativeGamma * 1.5, -maxOffset, maxOffset);
+  tiltY = clamp(relativeBeta * 0.8, -maxOffset, maxOffset);
 }
 
 // 🛡️ Request permission (iOS)
@@ -55,6 +65,7 @@ function requestMotionPermission() {
     DeviceOrientationEvent.requestPermission()
       .then((response) => {
         if (response === "granted") {
+          isMotionActive = true; // ✅ Activate orientation on first tap
           window.addEventListener("deviceorientation", handleOrientation);
         } else {
           alert("Motion permission denied ❌");
@@ -62,6 +73,7 @@ function requestMotionPermission() {
       })
       .catch(console.error);
   } else {
+    isMotionActive = true; // ✅ Auto-enable on Android
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
@@ -69,7 +81,6 @@ function requestMotionPermission() {
 // 🧠 Touch drag
 object.addEventListener("touchstart", (e) => {
   isDragging = true;
-  isMotionActive = false;
   startX = e.touches[0].clientX - currentX;
   startY = e.touches[0].clientY - currentY;
 });
@@ -88,7 +99,6 @@ object.addEventListener("touchend", () => {
 // 🧠 Mouse drag
 object.addEventListener("mousedown", (e) => {
   isDragging = true;
-  isMotionActive = false;
   startX = e.clientX - currentX;
   startY = e.clientY - currentY;
   document.addEventListener("mousemove", onMouseMove);
@@ -108,12 +118,5 @@ function onMouseUp() {
   document.removeEventListener("mouseup", onMouseUp);
 }
 
-// 👆 Tap to activate motion
-object.addEventListener("click", () => {
-  if (!isDragging) {
-    isMotionActive = true;
-  }
-});
-
-// ✅ iOS permission on tap
+// ✅ iOS permission on first interaction
 window.addEventListener("click", requestMotionPermission);
