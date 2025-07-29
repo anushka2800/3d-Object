@@ -1,4 +1,4 @@
-// ✅ Final script.js with auto-orientation after permission, drag, and orientation baseline
+// ✅ Final script.js: drag + bounce + orientation tilt (fully fixed)
 
 const object = document.getElementById("floatingObject");
 
@@ -26,6 +26,7 @@ function clamp(value, min, max) {
 
 // 🎯 Animation: bounce + drag + tilt
 function animate() {
+  // Only bounce when idle
   if (!isDragging && !isMotionActive) {
     bounceY += 0.3 * bounceDirection;
     if (bounceY > 10 || bounceY < -10) bounceDirection *= -1;
@@ -40,7 +41,7 @@ animate();
 
 // 📱 Orientation Handler
 function handleOrientation(event) {
-  if (!isMotionActive || isDragging) return;
+  if (!isMotionActive) return;
 
   const gamma = event.gamma || 0;
   const beta = event.beta || 0;
@@ -53,7 +54,7 @@ function handleOrientation(event) {
   const relativeBeta = beta - initialBeta;
 
   tiltX = clamp(relativeGamma * 1.5, -maxOffset, maxOffset);
-  tiltY = clamp(relativeBeta * 0.8, -maxOffset, maxOffset);
+  tiltY = clamp(relativeBeta * 1.2, -maxOffset, maxOffset); // more responsive downward tilt
 }
 
 // 🛡️ Request permission (iOS)
@@ -65,7 +66,7 @@ function requestMotionPermission() {
     DeviceOrientationEvent.requestPermission()
       .then((response) => {
         if (response === "granted") {
-          isMotionActive = true; // ✅ Activate orientation on first tap
+          isMotionActive = true;
           window.addEventListener("deviceorientation", handleOrientation);
         } else {
           alert("Motion permission denied ❌");
@@ -73,7 +74,7 @@ function requestMotionPermission() {
       })
       .catch(console.error);
   } else {
-    isMotionActive = true; // ✅ Auto-enable on Android
+    isMotionActive = true;
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
