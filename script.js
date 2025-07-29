@@ -1,3 +1,5 @@
+// ✅ Fixed script.js with working orientation + drag
+
 const object = document.getElementById("floatingObject");
 
 let currentX = 0;
@@ -14,7 +16,11 @@ let tiltY = 0;
 
 const maxOffset = 80;
 
-// 🧠 Animation loop: bounce + drag + tilt
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(value, max));
+}
+
+// 🧠 Animate bounce + drag + tilt
 function animate() {
   if (!isDragging) {
     bounceY += 0.3 * bounceDirection;
@@ -24,21 +30,13 @@ function animate() {
   const finalX = currentX + tiltX;
   const finalY = currentY + tiltY;
 
-  object.style.transform = `
-    translateX(${finalX}px)
-    translateY(${finalY + bounceY}px)
-  `;
+  object.style.transform = `translateX(${finalX}px) translateY(${finalY + bounceY}px)`;
 
   requestAnimationFrame(animate);
 }
 animate();
 
-// 📐 Clamp helper
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(value, max));
-}
-
-// 🖐 TOUCH EVENTS
+// 🖐 Touch Events
 object.addEventListener("touchstart", (e) => {
   isDragging = true;
   startX = e.touches[0].clientX - currentX;
@@ -57,7 +55,7 @@ object.addEventListener("touchend", () => {
   isDragging = false;
 });
 
-// 🖱 MOUSE EVENTS
+// 🖱 Mouse Events
 object.addEventListener("mousedown", (e) => {
   isDragging = true;
   startX = e.clientX - currentX;
@@ -81,41 +79,45 @@ function onMouseUp() {
   document.removeEventListener("mouseup", onMouseUp);
 }
 
-// 📱 DEVICE ORIENTATION
+// 📱 Orientation Handler
 function handleOrientation(event) {
-  const gamma = event.gamma || 0; // left-right
-  const beta = event.beta || 0;   // front-back
+  const gamma = event.gamma || 0;
+  const beta = event.beta || 0;
 
-  console.log("gamma:", gamma, "beta:", beta); // ✅ Debug
+  tiltX = clamp(gamma * 2.2, -maxOffset, maxOffset);
+  tiltY = clamp(beta * 1.2, -maxOffset, maxOffset);
 
-  const scale = 2.0;
-
-  tiltX = clamp(gamma * scale, -maxOffset, maxOffset);
-  tiltY = clamp(beta * scale * 0.7, -maxOffset, maxOffset);
+  // Live debug output
+  const debug = document.getElementById("debug") || document.createElement("div");
+  debug.id = "debug";
+  debug.innerHTML = `gamma: ${gamma.toFixed(1)}<br>beta: ${beta.toFixed(1)}`;
+  document.body.appendChild(debug);
 }
 
-// 📱 REQUEST PERMISSION ON iOS
+// 📱 Ask for permission (iOS only)
 function requestMotionPermission() {
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
     typeof DeviceOrientationEvent.requestPermission === "function"
   ) {
+    console.log("Requesting permission...");
     DeviceOrientationEvent.requestPermission()
       .then((response) => {
+        console.log("Permission response:", response);
         if (response === "granted") {
-          console.log("Motion permission granted ✅");
           window.addEventListener("deviceorientation", handleOrientation);
         } else {
           alert("Permission denied ❌");
         }
       })
       .catch((err) => {
-        console.error("Permission error:", err);
+        console.error("Motion permission error:", err);
       });
   } else {
-    console.log("Listening to deviceorientation directly (Android) ✅");
+    console.log("Listening to deviceorientation directly ✅");
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
 
+// 📲 Trigger permission request on first tap
 window.addEventListener("click", requestMotionPermission);
